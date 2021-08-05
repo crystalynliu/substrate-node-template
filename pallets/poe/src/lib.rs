@@ -7,6 +7,7 @@ pub use pallet::*;
 pub mod pallet {
 	use frame_support::{
 		dispatch::DispatchResultWithPostInfo,
+		dispatch::DispatchResult,
 		pallet_prelude::*
 	};
 	use frame_system::pallet_prelude::*;
@@ -97,7 +98,7 @@ pub mod pallet {
 
 			ensure!(owner == sender, Error::<T>::NotClaimOwner);
 
-			Proofs::<T>::try_mutate(&claim, |_v| -> (T::AccountId, T::BlockNumber) {(receiver.clone(), block_number)})?;
+			Proofs::<T>::try_mutate(&claim, |v| -> DispatchResult { *v = Some((receiver.clone(), block_number)); Ok(())})?;
 			Self::deposit_event(Event::ClaimTransfer(sender, claim, receiver));
 			Ok(().into())
 		}
