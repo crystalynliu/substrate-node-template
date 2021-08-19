@@ -26,6 +26,18 @@ fn create_claim_failed_when_claim_already_exist() {
 }
 
 #[test]
+fn create_claim_failed_when_claim_is_oversize() {
+	new_test_ext().execute_with( || {
+		let claim: Vec<u8> = vec![1; 51];
+
+		assert_noop!(
+			PoeModule::create_claim(Origin::signed(1), claim.clone()),
+			Error::<Test>::ClaimTooLong
+		);
+	})
+}
+
+#[test]
 fn revoke_claim_works() {
 	new_test_ext().execute_with( || {
 		let claim: Vec<u8> = vec![0, 1];

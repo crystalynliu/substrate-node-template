@@ -21,6 +21,7 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type StringLimit: Get<u32>;
 	}
 
 	#[pallet::pallet]
@@ -49,7 +50,8 @@ pub mod pallet {
 	pub enum Error<T>{
 		ProofAlreadyExist,
 		ClaimNotExists,
-		NotClaimOwner
+		NotClaimOwner,
+		ClaimTooLong
 	}
 
 	#[pallet::hooks]
@@ -64,6 +66,7 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 
+			ensure!(claim.len() <= T::StringLimit::get() as usize, Error::<T>::ClaimTooLong);
 			ensure!(!Proofs::<T>::contains_key(&claim), Error::<T>::ProofAlreadyExist);
 
 			Proofs::<T>::insert(
