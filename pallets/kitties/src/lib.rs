@@ -50,11 +50,14 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		KittyCreated(T::AccountId, KittyIndex),
+		KittyTransfer(T::AccountId, T::AccountId, KittyIndex),
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
 		KittiesCountOverflow,
+		NotKittyOwner,
+		KittiesNotExist,
 	}
 
 	#[pallet::hooks]
@@ -83,6 +86,25 @@ pub mod pallet {
 			KittiesCount::<T>::put(kitty_id + 1);
 
 			Self::deposit_event(Event::KittyCreated(who, kitty_id));
+			Ok(().into())
+		}
+
+		#[pallet::weight(0)]
+		pub fn transfer_kitty(
+			origin: OriginFor<T>,
+			new_owner: T::AccountId,
+			kitty_id: KittyIndex
+		) -> DispatchResultWithPostInfo {
+			let who = ensure_signed(origin)?;
+
+			ensure!(Kitties::<T>::get(kitty_id).is_some(), Error::<T>::KittiesNotExist);
+
+			ensure!(Some(who.clone()) == Owner::<T>::get(kitty_id), Error::<T>::NotKittyOwner);
+
+			Owner::<T>::insert(kitty_id, Some(new_owner.clone()));
+
+			Self::deposit_event(Event::KittyTransfer(who, new_owner, kitty_id));
+
 			Ok(().into())
 		}
 	}
