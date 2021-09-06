@@ -72,19 +72,11 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
-			let kitty_id = match Self::kitties_count() {
-				Some(id) => {
-					ensure!(id != T::KittyIndex::max_value(), Error::<T>::KittiesCountOverflow);
-					id
-				},
-				None => { 0u32.into() }
-			};
-
 			let dna = Self::random_value(&who);
 
-			Kitties::<T>::insert(kitty_id, Some(Kitty(dna)));
-			Owner::<T>::insert(kitty_id, Some(who.clone()));
-			KittiesCount::<T>::put(kitty_id + 1u32.into());
+			let kitty_id = Self::get_kitty_id()?;
+
+			Self::store_kitty(&who, kitty_id, dna);
 
 			Self::deposit_event(Event::KittyCreated(who, kitty_id));
 			Ok(().into())
@@ -122,14 +114,6 @@ pub mod pallet {
 			let kitty_1 = Self::kitties(kitty_id_1).ok_or(Error::<T>::KittyNotExist)?;
 			let kitty_2 = Self::kitties(kitty_id_2).ok_or(Error::<T>::KittyNotExist)?;
 
-			let kitty_id = match Self::kitties_count() {
-				Some(id) => {
-					ensure!(id != T::KittyIndex::max_value(), Error::<T>::KittiesCountOverflow);
-					id
-				},
-				None => { 0u32.into() }
-			};
-
 			let dna_1 = kitty_1.0;
 			let dna_2 = kitty_2.0;
 
@@ -140,9 +124,9 @@ pub mod pallet {
 				new_dna[i] = (selector[i] & dna_1[i]) | (!selector[i] & dna_2[i]);
 			}
 
-			Kitties::<T>::insert(kitty_id, Some(Kitty(new_dna)));
-			Owner::<T>::insert(kitty_id, Some(who.clone()));
-			KittiesCount::<T>::put(kitty_id + 1u32.into());
+			let kitty_id = Self::get_kitty_id()?;
+
+			Self::store_kitty(&who, kitty_id, new_dna);
 
 			Self::deposit_event(Event::KittyBreed(kitty_id_1, kitty_id_2));
 
@@ -151,6 +135,24 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
+		fn get_kitty_id () -> sp_std::result::Result<T::KittyIndex, DispatchError> {
+			let kitty_id = match Self::kitties_count() {
+				Some(id) => {
+					ensure!(id != T::KittyIndex::max_value(), Error::<T>::KittiesCountOverflow);
+					id
+				},
+				None => { 0u32.into() }
+			};
+
+			Ok(kitty_id)
+		}
+
+		fn store_kitty(who: &T::AccountId, kitty_id: T::KittyIndex, dna: [u8; 16]) {
+			Kitties::<T>::insert(kitty_id, Some(Kitty(dna)));
+			Owner::<T>::insert(kitty_id, Some(who.clone()));
+			KittiesCount::<T>::put(kitty_id + 1u32.into());
+		}
+
 		fn random_value(sender: &T::AccountId) -> [u8; 16] {
 			let payload = (
 				T::Randomness::random_seed(),
