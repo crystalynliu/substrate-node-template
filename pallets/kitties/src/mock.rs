@@ -21,7 +21,6 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Module, Call, Config, Storage, Event<T>},
 		KittiesModule: pallet_kitties::{Module, Call, Storage, Event<T>},
-
 	}
 );
 
@@ -58,6 +57,7 @@ impl system::Config for Test {
 impl pallet_kitties::Config for Test {
 	type Event = Event;
 	type Randomness = TestRandomness;
+	type KittyIndex = u32;
 }
 
 // Build genesis storage according to the mock runtime.
